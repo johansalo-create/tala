@@ -1,0 +1,24 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded square background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- Microphone body -->
+  <rect x="412" y="220" width="200" height="340" rx="100" fill="white" opacity="0.95"/>
+
+  <!-- Stand arc -->
+  <path d="M330 480 C330 580, 380 680, 512 680 C644 680, 694 580, 694 480"
+        stroke="white" stroke-width="40" stroke-linecap="round" fill="none" opacity="0.9"/>
+
+  <!-- Stand stem -->
+  <line x1="512" y1="680" x2="512" y2="780" stroke="white" stroke-width="40" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- Stand base -->
+  <line x1="420" y1="780" x2="604" y2="780" stroke="white" stroke-width="40" stroke-linecap="round" opacity="0.9"/>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+</svg>

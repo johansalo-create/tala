@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcripts</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 10px;
+            background: white;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+        }
+        .sort-select {
+            padding: 12px 16px;
+            font-size: 14px;
+            border: 1px solid #d2d2d7;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+        }
+        .sort-select:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+        .action-bar {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #0071e3;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        .action-bar.visible {
+            display: flex;
+        }
+        .action-bar .count {
+            font-weight: 500;
+        }
+        .action-bar button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: white;
+            color: #0071e3;
+        }
+        .action-bar button:hover {
+            background: #f0f0f0;
+        }
+        .action-bar .clear-btn {
+            margin-left: auto;
+            background: transparent;
+            color: white;
+            text-decoration: underline;
+        }
+        .action-bar .clear-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .transcript-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .transcript-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .transcript-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .transcript-card.selected {
+            border: 2px solid #0071e3;
+            background: #f0f7ff;
+        }
+        .transcript-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #0071e3;
+        }
+        .transcript-content {
+            flex: 1;
+            cursor: pointer;
+        }
+        .transcript-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .transcript-filename {
+            font-weight: 500;
+            font-size: 14px;
+            color: #86868b;
+        }
+        .transcript-meta {
+            font-size: 12px;
+            color: #86868b;
+        }
+        .transcript-preview {
+            font-size: 15px;
+            color: #1d1d1f;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86868b;
+        }
+        .empty-state h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        mark {
+            background: #ffd60a;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1d1d1f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        .toast.visible {
+            opacity: 1;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .controls {
+                flex-direction: column;
+            }
+            .search-box, .sort-select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Transcripts</h1>
+
+    <form method="get" action="/" id="filterForm">
+        <div class="controls">
+            <input type="text"
+                   name="q"
+                   class="search-box"
+                   placeholder="Search transcripts..."
+                   value="{{ search }}"
+                   autocomplete="off">
+            <select name="sort" class="sort-select" onchange="this.form.submit()">
+                <option value="filename" {% if sort == 'filename' %}selected{% endif %}>Sort by Recording Date</option>
+                <option value="transcribed" {% if sort == 'transcribed' %}selected{% endif %}>Sort by Transcribed Date</option>
+            </select>
+        </div>
+    </form>
+
+    <div class="action-bar" id="actionBar">
+        <span class="count"><span id="selectedCount">0</span> selected</span>
+        <button onclick="copySelected()">Copy Transcripts</button>
+        <button class="clear-btn" onclick="clearSelection()">Clear</button>
+    </div>
+
+    <div class="transcript-list">
+        {% if transcripts %}
+            {% for t in transcripts %}
+            <div class="transcript-card" data-id="{{ t.id }}" data-transcript="{{ t.transcript | e }}">
+                <input type="checkbox" class="transcript-checkbox" onchange="updateSelection()">
+                <div class="transcript-content" onclick="window.location='/transcript/{{ t.id }}'">
+                    <div class="transcript-header">
+                        <span class="transcript-filename">{{ t.filename }}</span>
+                        <span class="transcript-meta">{{ t.duration }} &middot; {{ t.filename_date or t.date }}</span>
+                    </div>
+                    <div class="transcript-preview">{{ t.preview }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                {% if search %}
+                    <h2>No results found</h2>
+                    <p>Try a different search term</p>
+                {% else %}
+                    <h2>No transcripts yet</h2>
+                    <p>Record a voice memo on your iPhone and it will appear here</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Auto-submit search after typing stops
+        let timeout;
+        document.querySelector('.search-box').addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.transcript-checkbox:checked');
+            const count = checkboxes.length;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('actionBar').classList.toggle('visible', count > 0);
+
+            // Update card styling
+            document.querySelectorAll('.transcript-card').forEach(card => {
+                const checkbox = card.querySelector('.transcript-checkbox');
+                card.classList.toggle('selected', checkbox.checked);
+            });
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.transcript-checkbox').forEach(cb => cb.checked = false);
+            updateSelection();
+        }
+
+        function copySelected() {
+            const selected = document.querySelectorAll('.transcript-card.selected');
+            const transcripts = [];
+
+            selected.forEach(card => {
+                const transcript = card.dataset.transcript;
+                const filename = card.querySelector('.transcript-filename').textContent;
+                transcripts.push(`--- ${filename} ---\n${transcript}`);
+            });
+
+            const text = transcripts.join('\n\n');
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`Copied ${selected.length} transcript${selected.length > 1 ? 's' : ''} to clipboard`);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 2000);
+        }
+
+        // Prevent checkbox click from navigating
+        document.querySelectorAll('.transcript-checkbox').forEach(cb => {
+            cb.addEventListener('click', e => e.stopPropagation());
+        });
+    </script>
+</body>
+</html>
