@@ -60,7 +60,8 @@ FFMPEG_CMD = find_ffmpeg_cmd()
 LANGUAGE_OPTIONS = {
     "Auto": "auto",
     "Svenska": "sv",
-    "English": "en"
+    "English": "en",
+    "Deutsch": "de"
 }
 DEFAULT_LANGUAGE = "auto"
 

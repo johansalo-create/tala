@@ -30,13 +30,16 @@ from system_recorder import (
 BASE_DIR = Path(__file__).parent
 WATCHER_SCRIPT = BASE_DIR / "watcher.py"
 WEBAPP_SCRIPT = BASE_DIR / "app.py"
+TRAY_ICON = BASE_DIR / "tray_icon.png"
 
 
 class TranscriptionApp(rumps.App):
     def __init__(self):
+        icon_path = str(TRAY_ICON) if TRAY_ICON.exists() else None
         super().__init__(
-            "Transcription",
-            icon=None,
+            "Tala™",
+            icon=icon_path,
+            template=True,
             quit_button=None
         )
         self.watcher_process = None
@@ -47,44 +50,65 @@ class TranscriptionApp(rumps.App):
         self.system_recorder = SystemRecorder()
         self.recording_timer = None
 
-        # Menu items
-        self.toggle_item = rumps.MenuItem("Start Service", callback=self.toggle_service)
-        self.status_item = rumps.MenuItem("Status: Stopped", callback=None)
+        # Menu items — svenska namn
+        self.toggle_item = rumps.MenuItem("Pausa", callback=self.toggle_service)
+        self.status_item = rumps.MenuItem("Aktiv", callback=None)
         self.status_item.set_callback(None)
 
         # System recording menu item
-        self.record_system_item = rumps.MenuItem("Record System Audio", callback=self.toggle_system_recording)
+        self.record_system_item = rumps.MenuItem("Spela in datorljud", callback=self.toggle_system_recording)
 
-        self.recent_menu = rumps.MenuItem("Recent Transcripts")
-        self.language_menu = rumps.MenuItem("Language")
+        self.recent_menu = rumps.MenuItem("Senaste")
+        self.language_menu = rumps.MenuItem("Språk")
         self._build_language_menu()
+
+        record_voice_item = rumps.MenuItem("Spela in röstmemo", callback=self.start_voice_memo)
+        transcribe_recent_item = rumps.MenuItem("Transkribera senaste", callback=self.process_recent)
+        webui_item = rumps.MenuItem("Visa transkriptioner", callback=self.open_webui)
+        voice_memos_item = rumps.MenuItem("Röstmemon i Finder", callback=self.open_voice_memos)
+        input_folder_item = rumps.MenuItem("Inmatning i Finder", callback=self.open_input_folder)
+        quit_item = rumps.MenuItem("Avsluta", callback=self.quit_app)
 
         menu_items = [
             self.toggle_item,
             self.status_item,
             None,  # Separator
-            rumps.MenuItem("Start Voice Memo", callback=self.start_voice_memo),
+            record_voice_item,
             self.record_system_item,
-        ]
-        menu_items.extend([
-            rumps.MenuItem("Process Recent Files", callback=self.process_recent),
-            rumps.MenuItem("Open Web UI", callback=self.open_webui),
-            rumps.MenuItem("Open Voice Memos Folder", callback=self.open_voice_memos),
-            rumps.MenuItem("Open Input Folder", callback=self.open_input_folder),
+            transcribe_recent_item,
+            webui_item,
+            voice_memos_item,
+            input_folder_item,
             None,  # Separator
             self.language_menu,
             self.recent_menu,
             None,  # Separator
-            rumps.MenuItem("Quit", callback=self.quit_app)
-        ])
+            rumps.MenuItem("Om Tala™", callback=self.show_about),
+            quit_item,
+        ]
+
+        # Tooltips
+        tooltips = [
+            (record_voice_item, "Öppnar Apples Voice Memos-app"),
+            (self.record_system_item, "Spelar in ljud från datorn (kräver BlackHole)"),
+            (transcribe_recent_item, "Transkribera senaste röstmemot manuellt"),
+            (webui_item, f"Öppnar webbgränssnittet (localhost:{FLASK_PORT})"),
+            (voice_memos_item, "Öppnar mappen med synkade iPhone-memon"),
+            (input_folder_item, "Öppnar mappen dit du kan dra egna ljudfiler"),
+        ]
+        for item, tip in tooltips:
+            item._menuitem.setToolTip_(tip)
         self.menu = menu_items
 
-        self.update_title()
         self.update_recent_transcripts()
 
         # Start a thread to periodically update recent transcripts
         self.update_thread = threading.Thread(target=self.periodic_update, daemon=True)
         self.update_thread.start()
+
+        # Autostart service
+        self.start_service()
+        self.update_title()
 
     def _get_settings(self):
         """Load settings from file."""
@@ -136,13 +160,13 @@ class TranscriptionApp(rumps.App):
     def update_title(self):
         """Update the menu bar icon/title based on status."""
         if self.is_running:
-            self.title = "🎙️"
-            self.toggle_item.title = "Stop Service"
-            self.status_item.title = "Status: Running"
+            self.title = ""
+            self.toggle_item.title = "Pausa"
+            self.status_item.title = "Aktiv"
         else:
-            self.title = "🎙️"
-            self.toggle_item.title = "Start Service"
-            self.status_item.title = "Status: Stopped"
+            self.title = ""
+            self.toggle_item.title = "Återuppta"
+            self.status_item.title = "Av"
 
     def toggle_service(self, sender):
         """Toggle the transcription service on/off."""
@@ -176,12 +200,12 @@ class TranscriptionApp(rumps.App):
 
             self.is_running = True
             rumps.notification(
-                "Transcription Service",
-                "Started",
-                "Watching for new voice memos..."
+                "Tala™",
+                "Startad",
+                "Bevakar nya röstmemon..."
             )
         except Exception as e:
-            rumps.alert(f"Failed to start: {e}")
+            rumps.alert(f"Kunde inte starta: {e}")
 
     def stop_service(self):
         """Stop the watcher and web app."""
@@ -194,36 +218,36 @@ class TranscriptionApp(rumps.App):
                 self.webapp_process = None
             self.is_running = False
             rumps.notification(
-                "Transcription Service",
-                "Stopped",
-                "Service has been stopped."
+                "Tala™",
+                "Pausad",
+                "Tjänsten är pausad."
             )
         except Exception as e:
-            rumps.alert(f"Failed to stop: {e}")
+            rumps.alert(f"Kunde inte stoppa: {e}")
 
     def process_recent(self, sender):
         """Manually trigger processing of recent files."""
         if not self.is_running:
-            rumps.alert("Please start the service first")
+            rumps.alert("Starta tjänsten först")
             return
 
         rumps.notification(
-            "Transcription Service",
-            "Processing",
-            "Checking for recent unprocessed files..."
+            "Tala™",
+            "Bearbetar",
+            "Letar efter nya filer..."
         )
 
     def start_voice_memo(self, sender):
         """Open Voice Memos app to start recording."""
-        subprocess.run(["open", "-a", "Voice Memos"])
+        subprocess.run(["open", "-a", "VoiceMemos"])
 
     def toggle_system_recording(self, sender):
         """Start or stop system audio recording."""
         if self.system_recorder.is_recording:
             # Stop recording
             output_file, message = self.system_recorder.stop_recording()
-            self.record_system_item.title = "Record System Audio"
-            self.title = "🎙️"
+            self.record_system_item.title = "Spela in datorljud"
+            self.title = ""
 
             if self.recording_timer:
                 self.recording_timer.stop()
@@ -261,8 +285,8 @@ class TranscriptionApp(rumps.App):
             # Start recording
             success, message = self.system_recorder.start_recording()
             if success:
-                self.record_system_item.title = "Stop Recording"
-                self.title = "🔴"
+                self.record_system_item.title = "Stoppa inspelning"
+                self.title = " REC"
                 rumps.notification(
                     "Recording Started",
                     "System Audio",
@@ -281,7 +305,7 @@ class TranscriptionApp(rumps.App):
             duration = int(self.system_recorder.get_duration())
             mins = duration // 60
             secs = duration % 60
-            self.record_system_item.title = f"Stop Recording ({mins}:{secs:02d})"
+            self.record_system_item.title = f"Stoppa inspelning ({mins}:{secs:02d})"
 
     def open_webui(self, sender):
         """Open the web UI in browser."""
@@ -290,6 +314,35 @@ class TranscriptionApp(rumps.App):
     def open_voice_memos(self, sender):
         """Open the Voice Memos folder in Finder."""
         subprocess.run(["open", str(VOICE_MEMOS_DIR)])
+
+    def show_about(self, sender):
+        """Show about dialog."""
+        rumps.alert(
+            title="Om Tala™ v1.2.8",
+            message=(
+                "Tala™ transkriberar dina röstmemon automatiskt med lokal AI. "
+                "Allt sker på din Mac, inget skickas till molnet.\n\n"
+                "Så fungerar det:\n"
+                "1. Spela in ett röstmemo på din iPhone\n"
+                "2. iCloud synkar filen till din Mac\n"
+                "3. Tala™ transkriberar automatiskt med whisper\n"
+                "4. Läs, sök och kopiera texten i webbgränssnittet\n\n"
+                "10 sätt att använda Tala™:\n\n"
+                "1. Spela in säljmöten och skapa offerter från samtalet\n"
+                "2. Diktera idéer och tankar när du är ute och går\n"
+                "3. Dokumentera kundsamtal och följa upp löften\n"
+                "4. Spela in föreläsningar och få sökbara anteckningar\n"
+                "5. Röstdagbok, kom ihåg vad du tänkte och kände\n"
+                "6. Brainstorma i grupp och få allt nedskrivet\n"
+                "7. Spela in telefonsamtal (med samtycke) som referens\n"
+                "8. Dokumentera byggarbetsplatser och besiktningar\n"
+                "9. Skapa mötesprotokoll utan att anteckna för hand\n"
+                "10. Samla feedback från kunder i fält\n\n"
+                "Producerat av Johan Salo\n"
+                "johan.salo@aiempowerlabs.com"
+            ),
+            ok="Stäng"
+        )
 
     def open_input_folder(self, sender):
         """Open the input folder in Finder for dropping audio files."""
@@ -387,10 +440,14 @@ class TranscriptionApp(rumps.App):
 
 
 if __name__ == "__main__":
+    print(f"Tala starting at {datetime.now()}", flush=True)
+
     # Run setup wizard on first launch
     from setup_wizard import run_setup
     if not run_setup():
+        print("Setup wizard returned False, exiting", flush=True)
         sys.exit(0)
 
+    print("Setup OK, launching menubar app", flush=True)
     app = TranscriptionApp()
     app.run()

@@ -6,9 +6,10 @@
 set -e
 
 APP_NAME="Tala"
-VERSION="1.0.0"
+VERSION="1.2.8"
 DMG_NAME="${APP_NAME}-${VERSION}"
-BUILD_DIR="$(pwd)/build"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BUILD_DIR="$SCRIPT_DIR/build"
 STAGE_DIR="$BUILD_DIR/dmg-stage"
 DMG_PATH="$BUILD_DIR/${DMG_NAME}.dmg"
 SRC_DIR="$STAGE_DIR/Tala"
@@ -49,6 +50,17 @@ if [ -f icon.icns ]; then
     cp icon.icns "$INSTALLER_RES/AppIcon.icns"
 fi
 
+# Embed source files inside app bundle (avoids App Translocation issues)
+EMBEDDED_SRC="$INSTALLER_RES/Tala"
+mkdir -p "$EMBEDDED_SRC"
+cp *.py "$EMBEDDED_SRC/"
+cp requirements.txt "$EMBEDDED_SRC/"
+cp install.sh "$EMBEDDED_SRC/"
+chmod +x "$EMBEDDED_SRC/install.sh"
+if [ -d templates ]; then
+    cp -r templates "$EMBEDDED_SRC/"
+fi
+
 # Create Info.plist
 cat > "$INSTALLER_APP/Contents/Info.plist" << 'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -64,9 +76,9 @@ cat > "$INSTALLER_APP/Contents/Info.plist" << 'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>1.0.0</string>
+    <string>1.2.8</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.2.8</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
@@ -84,7 +96,7 @@ echo "Building Tala.app launcher..."
 LAUNCHER_SCRIPT="$BUILD_DIR/launcher.applescript"
 cat > "$LAUNCHER_SCRIPT" << 'APPLESCRIPT'
 on run
-    set installDir to (POSIX path of (path to home folder)) & "Applications/Transcription"
+    set installDir to (POSIX path of (path to home folder)) & "Applications/Tala"
     set startCmd to installDir & "/start.command"
 
     try
@@ -101,15 +113,31 @@ APPLESCRIPT
 osacompile -o "$STAGE_DIR/Tala.app" "$LAUNCHER_SCRIPT"
 rm "$LAUNCHER_SCRIPT"
 
+# --- Ad-hoc codesign both apps ---
+echo "Signing apps..."
+codesign --force --deep --sign - "$INSTALLER_APP"
+codesign --force --deep --sign - "$STAGE_DIR/Tala.app"
+
+# --- Create launcher script that clears quarantine ---
+cat > "$STAGE_DIR/ÖPPNA FÖRST.command" << 'LAUNCHER'
+#!/bin/bash
+# Tar bort macOS-blockering och startar installern
+DIR="$(cd "$(dirname "$0")" && pwd)"
+xattr -cr "$DIR/Installera Tala.app" 2>/dev/null
+xattr -cr "$DIR/Tala.app" 2>/dev/null
+open "$DIR/Installera Tala.app"
+LAUNCHER
+chmod +x "$STAGE_DIR/ÖPPNA FÖRST.command"
+
 # --- Create README ---
 cat > "$STAGE_DIR/LÄS MIG.txt" << 'README'
-Tala — Röstmemo till text
+Tala™ — Röstmemo till text
 =========================
 
 Transkriberar dina Voice Memos automatiskt med lokal AI.
 
 INSTALLATION:
-1. Dubbelklicka på "Installera Tala"
+1. Dubbelklicka på "ÖPPNA FÖRST"
 2. Klicka "Installera" i fönstret som öppnas
 3. Vänta tills progressbaren är klar (~5 min)
 4. Klart! Appen startar automatiskt.
@@ -122,7 +150,13 @@ ANVÄNDNING:
    eller i webbläsaren: http://localhost:5051
 
 Appen startar automatiskt när du loggar in.
-Om den inte kör, dubbelklicka på "Tala".
+Om den inte kör, dubbelklicka på "Tala™".
+
+OM APPEN INTE GÅR ATT ÖPPNA:
+macOS kan blockera appen första gången. Högerklicka på
+"Installera Tala" och välj "Öppna". Om det inte hjälper,
+öppna Terminal och kör:
+  xattr -cr "/Volumes/Tala/Installera Tala.app"
 
 KRAV:
 - macOS (Apple Silicon eller Intel)

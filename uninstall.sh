@@ -2,9 +2,7 @@
 # ============================================================
 # Transcription App — Uninstaller
 # ============================================================
-set -e
-
-INSTALL_DIR="$HOME/Applications/Transcription"
+INSTALL_DIR="$HOME/Applications/Tala"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.transcription.menubar.plist"
 APP_DATA="$HOME/Library/Application Support/Transcription"
 LOG_DIR="$HOME/Library/Logs/Transcription"

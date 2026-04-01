@@ -281,10 +281,15 @@ def parse_date_from_filename(filename):
     return None
 
 
-def process_existing_files(days=14):
-    """Process any existing unprocessed files from the last N days."""
+def process_existing_files(days=14, limit=None):
+    """Process existing unprocessed files from the last N days.
+
+    Args:
+        days: Only look at files from the last N days.
+        limit: Max number of files to transcribe (newest first). None = no limit.
+    """
     print(f"Checking for existing files in: {VOICE_MEMOS_DIR}")
-    print(f"Looking at files from the last {days} days...")
+    print(f"Looking at files from the last {days} days (limit={limit})...")
 
     if not VOICE_MEMOS_DIR.exists():
         print(f"Voice Memos directory not found: {VOICE_MEMOS_DIR}")
@@ -294,21 +299,27 @@ def process_existing_files(days=14):
     files_checked = 0
     files_processed = 0
 
+    # Collect and sort by date (newest first) so limit takes the most recent
+    candidates = []
     for filepath in VOICE_MEMOS_DIR.glob("*.m4a"):
+        file_date = parse_date_from_filename(filepath.name)
+        if file_date and file_date < cutoff_date:
+            continue
+        candidates.append((filepath, file_date or datetime.min))
+
+    candidates.sort(key=lambda x: x[1], reverse=True)
+
+    for filepath, _ in candidates:
         try:
-            # Parse date from filename (e.g., "20251212 013354-XXXX.m4a")
-            file_date = parse_date_from_filename(filepath.name)
-
-            # Skip files older than cutoff
-            if file_date and file_date < cutoff_date:
-                continue
-
             files_checked += 1
             file_hash = get_file_hash(filepath)
 
             if not is_already_transcribed(file_hash):
                 process_audio_file(filepath)
                 files_processed += 1
+                if limit and files_processed >= limit:
+                    print(f"Reached limit of {limit} files")
+                    break
         except Exception as e:
             print(f"Error processing {filepath}: {e}")
 
@@ -351,8 +362,8 @@ def main():
     # Initialize database
     init_db()
 
-    # Process existing files first
-    process_existing_files()
+    # Process existing files first (only 10 newest to avoid long startup)
+    process_existing_files(limit=10)
     process_input_folder()
 
     # Set up file watchers
@@ -378,9 +389,9 @@ def main():
             time.sleep(1)
             event_handler.process_pending()
 
-            # Periodic re-scan for files missed by watchdog (e.g. iCloud sync)
+            # Periodic re-scan to catch iCloud-synced files missed by watchdog
             if time.time() - last_rescan > rescan_interval:
-                process_existing_files(days=3)
+                process_existing_files(days=2, limit=5)
                 process_input_folder()
                 last_rescan = time.time()
     except KeyboardInterrupt:

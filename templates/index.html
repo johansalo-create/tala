@@ -1,15 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcripts</title>
+    <title>Tala™</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f7;
@@ -19,283 +15,293 @@
             max-width: 900px;
             margin: 0 auto;
         }
-        h1 {
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
+        h1 { font-size: 28px; font-weight: 600; margin-bottom: 20px; }
         .controls {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
+            display: flex; gap: 12px; margin-bottom: 16px;
+            flex-wrap: wrap; align-items: center;
         }
         .search-box {
-            flex: 1;
-            min-width: 200px;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 1px solid #d2d2d7;
-            border-radius: 10px;
-            background: white;
+            flex: 1; min-width: 200px;
+            padding: 10px 14px; font-size: 15px;
+            border: 1px solid #d2d2d7; border-radius: 10px; background: white;
         }
         .search-box:focus {
-            outline: none;
-            border-color: #0071e3;
+            outline: none; border-color: #0071e3;
             box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
         }
-        .sort-select {
-            padding: 12px 16px;
-            font-size: 14px;
-            border: 1px solid #d2d2d7;
+        .filter-bar {
+            display: flex; gap: 8px; margin-bottom: 20px;
+        }
+        .filter-btn {
+            padding: 6px 14px; font-size: 13px; font-weight: 500;
+            border: 1px solid #d2d2d7; border-radius: 20px;
+            background: white; color: #1d1d1f; cursor: pointer;
+            text-decoration: none; transition: all 0.15s;
+        }
+        .filter-btn:hover { background: #e8e8ed; }
+        .filter-btn.active {
+            background: #0071e3; color: white; border-color: #0071e3;
+        }
+        .filter-count {
+            font-size: 11px; opacity: 0.7; margin-left: 4px;
+        }
+        .memo-list { display: flex; flex-direction: column; gap: 10px; }
+        .memo-card {
+            background: white; border-radius: 12px; padding: 14px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .memo-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .memo-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 6px; flex-wrap: wrap; gap: 6px;
+        }
+        .memo-date { font-weight: 500; font-size: 15px; }
+        .memo-status {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 12px; font-weight: 500; padding: 2px 8px;
             border-radius: 10px;
-            background: white;
-            cursor: pointer;
         }
-        .sort-select:focus {
-            outline: none;
-            border-color: #0071e3;
+        .status-transcribed { background: #d1f2d9; color: #1a7a2e; }
+        .status-new { background: #f0f0f0; color: #86868b; }
+        .status-processing { background: #fff3cd; color: #856404; }
+        .status-error { background: #fde2e2; color: #a11; }
+        .memo-preview {
+            font-size: 14px; color: #3a3a3c; margin: 6px 0;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
         }
-        .action-bar {
-            display: none;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background: #0071e3;
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 16px;
+        .memo-preview a { color: inherit; text-decoration: none; }
+        .memo-preview a:hover { text-decoration: underline; }
+        .memo-footer {
+            display: flex; align-items: center; gap: 10px; margin-top: 8px;
         }
-        .action-bar.visible {
-            display: flex;
+        .memo-footer audio {
+            height: 28px; flex: 1; max-width: 300px;
         }
-        .action-bar .count {
-            font-weight: 500;
+        .btn-transcribe {
+            padding: 5px 14px; font-size: 13px; font-weight: 500;
+            border: none; border-radius: 8px; cursor: pointer;
+            background: #0071e3; color: white; transition: background 0.15s;
         }
-        .action-bar button {
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 500;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            background: white;
-            color: #0071e3;
+        .btn-transcribe:hover { background: #0060c0; }
+        .btn-transcribe:disabled {
+            background: #d2d2d7; color: #86868b; cursor: default;
         }
-        .action-bar button:hover {
-            background: #f0f0f0;
+        .memo-filename {
+            font-size: 11px; color: #aeaeb2; margin-top: 4px;
         }
-        .action-bar .clear-btn {
-            margin-left: auto;
-            background: transparent;
-            color: white;
-            text-decoration: underline;
+        .spinner {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid #856404; border-top-color: transparent;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
         }
-        .action-bar .clear-btn:hover {
-            background: rgba(255,255,255,0.1);
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .batch-bar {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px; padding: 10px 14px;
+            background: white; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
-        .transcript-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .btn-batch {
+            padding: 8px 18px; font-size: 14px; font-weight: 500;
+            border: none; border-radius: 8px; cursor: pointer;
+            background: #0071e3; color: white; transition: background 0.15s;
+            white-space: nowrap;
         }
-        .transcript-card {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
+        .btn-batch:hover { background: #0060c0; }
+        .btn-batch:disabled { background: #d2d2d7; color: #86868b; cursor: default; }
+        .batch-progress {
+            font-size: 14px; color: #3a3a3c;
         }
-        .transcript-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .btn-show-more {
+            display: block; width: 100%; padding: 12px; margin-top: 12px;
+            font-size: 14px; font-weight: 500; text-align: center;
+            border: 1px solid #d2d2d7; border-radius: 10px;
+            background: white; color: #0071e3; cursor: pointer;
+            transition: background 0.15s;
         }
-        .transcript-card.selected {
-            border: 2px solid #0071e3;
-            background: #f0f7ff;
-        }
-        .transcript-checkbox {
-            width: 20px;
-            height: 20px;
-            margin-top: 2px;
-            cursor: pointer;
-            accent-color: #0071e3;
-        }
-        .transcript-content {
-            flex: 1;
-            cursor: pointer;
-        }
-        .transcript-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .transcript-filename {
-            font-weight: 500;
-            font-size: 14px;
-            color: #86868b;
-        }
-        .transcript-meta {
-            font-size: 12px;
-            color: #86868b;
-        }
-        .transcript-preview {
-            font-size: 15px;
-            color: #1d1d1f;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        .btn-show-more:hover { background: #f0f0f5; }
         .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #86868b;
+            text-align: center; padding: 60px 20px; color: #86868b;
         }
-        .empty-state h2 {
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-        mark {
-            background: #ffd60a;
-            padding: 0 2px;
-            border-radius: 2px;
-        }
+        .empty-state h2 { font-size: 20px; margin-bottom: 8px; }
         .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1d1d1f;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1000;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #1d1d1f; color: white; padding: 10px 20px;
+            border-radius: 8px; font-size: 14px; opacity: 0;
+            transition: opacity 0.3s; z-index: 1000;
         }
-        .toast.visible {
-            opacity: 1;
-        }
+        .toast.visible { opacity: 1; }
         @media (max-width: 600px) {
-            body {
-                padding: 12px;
-            }
-            h1 {
-                font-size: 24px;
-            }
-            .controls {
-                flex-direction: column;
-            }
-            .search-box, .sort-select {
-                width: 100%;
-            }
+            body { padding: 12px; }
+            h1 { font-size: 24px; }
+            .memo-footer audio { max-width: 200px; }
         }
     </style>
 </head>
 <body>
-    <h1>Transcripts</h1>
+    <h1>Tala™</h1>
 
-    <form method="get" action="/" id="filterForm">
-        <div class="controls">
-            <input type="text"
-                   name="q"
-                   class="search-box"
-                   placeholder="Search transcripts..."
-                   value="{{ search }}"
-                   autocomplete="off">
-            <select name="sort" class="sort-select" onchange="this.form.submit()">
-                <option value="filename" {% if sort == 'filename' %}selected{% endif %}>Sort by Recording Date</option>
-                <option value="transcribed" {% if sort == 'transcribed' %}selected{% endif %}>Sort by Transcribed Date</option>
-            </select>
-        </div>
-    </form>
-
-    <div class="action-bar" id="actionBar">
-        <span class="count"><span id="selectedCount">0</span> selected</span>
-        <button onclick="copySelected()">Copy Transcripts</button>
-        <button class="clear-btn" onclick="clearSelection()">Clear</button>
+    <div class="controls">
+        <input type="text" class="search-box" placeholder="Sok i transkriptioner..."
+               value="{{ search }}" id="searchBox" autocomplete="off">
     </div>
 
-    <div class="transcript-list">
-        {% if transcripts %}
-            {% for t in transcripts %}
-            <div class="transcript-card" data-id="{{ t.id }}" data-transcript="{{ t.transcript | e }}">
-                <input type="checkbox" class="transcript-checkbox" onchange="updateSelection()">
-                <div class="transcript-content" onclick="window.location='/transcript/{{ t.id }}'">
-                    <div class="transcript-header">
-                        <span class="transcript-filename">{{ t.filename }}</span>
-                        <span class="transcript-meta">{{ t.duration }} &middot; {{ t.filename_date or t.date }}</span>
-                    </div>
-                    <div class="transcript-preview">{{ t.preview }}</div>
+    <div class="filter-bar">
+        <a href="/?filter=all" class="filter-btn {% if filter_mode == 'all' %}active{% endif %}">
+            Voice Memos<span class="filter-count">{{ counts.all }}</span>
+        </a>
+        <a href="/?filter=transcribed" class="filter-btn {% if filter_mode == 'transcribed' %}active{% endif %}">
+            Transkriberade<span class="filter-count">{{ counts.transcribed }}</span>
+        </a>
+        <a href="/?filter=new" class="filter-btn {% if filter_mode == 'new' %}active{% endif %}">
+            Nya<span class="filter-count">{{ counts.new }}</span>
+        </a>
+        {% if counts.input > 0 %}
+        <a href="/?filter=input" class="filter-btn {% if filter_mode == 'input' %}active{% endif %}">
+            Inmatade filer<span class="filter-count">{{ counts.input }}</span>
+        </a>
+        {% endif %}
+    </div>
+
+    {% if counts.new > 0 and filter_mode != 'input' %}
+    <div class="batch-bar" id="batchBar">
+        <button class="btn-batch" id="batchBtn" onclick="startBatch()">
+            Transkribera 10 till
+        </button>
+        <span class="batch-progress" id="batchProgress">
+            {{ counts.new }} otranskriberade
+        </span>
+    </div>
+    {% endif %}
+
+    <div class="memo-list">
+        {% if items %}
+            {% for item in items %}
+            <div class="memo-card" data-filename="{{ item.filename }}">
+                <div class="memo-header">
+                    <span class="memo-date">{{ item.date_display or item.filename }}</span>
+                    {% if item.status == 'transcribed' %}
+                        <span class="memo-status status-transcribed">Transkriberad</span>
+                    {% elif item.status == 'processing' %}
+                        <span class="memo-status status-processing"><span class="spinner"></span> Transkriberar...</span>
+                    {% elif item.status == 'error' %}
+                        <span class="memo-status status-error">Fel</span>
+                    {% else %}
+                        <span class="memo-status status-new">Ej transkriberad</span>
+                    {% endif %}
                 </div>
+
+                {% if item.preview %}
+                <div class="memo-preview">
+                    <a href="/transcript/{{ item.id }}">{{ item.preview }}</a>
+                </div>
+                {% endif %}
+
+                <div class="memo-footer">
+                    {% if item.id %}
+                    <audio controls preload="none" src="/audio/{{ item.id }}"></audio>
+                    {% else %}
+                    <audio controls preload="none" src="/audio/file/{{ item.filename }}"></audio>
+                    {% endif %}
+
+                    {% if item.status == 'new' %}
+                    <button class="btn-transcribe" onclick="startTranscribe('{{ item.filename }}', this)">
+                        Transkribera
+                    </button>
+                    {% elif item.status == 'processing' %}
+                    <button class="btn-transcribe" disabled>Transkriberar...</button>
+                    {% endif %}
+
+                    {% if item.duration %}
+                    <span style="font-size:12px;color:#86868b">{{ item.duration }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="memo-filename">{{ item.filename }}</div>
             </div>
             {% endfor %}
         {% else %}
             <div class="empty-state">
                 {% if search %}
-                    <h2>No results found</h2>
-                    <p>Try a different search term</p>
+                    <h2>Inga resultat</h2>
+                    <p>Prova ett annat sokord</p>
                 {% else %}
-                    <h2>No transcripts yet</h2>
-                    <p>Record a voice memo on your iPhone and it will appear here</p>
+                    <h2>Inga rostmemon</h2>
+                    <p>Spela in ett rostmemo pa din iPhone sa dyker det upp har</p>
                 {% endif %}
             </div>
         {% endif %}
     </div>
 
+    {% if has_more %}
+    <button class="btn-show-more" onclick="showMore()">
+        Visa fler ({{ total_items - show }} till)
+    </button>
+    {% endif %}
+
     <div class="toast" id="toast"></div>
 
     <script>
-        // Auto-submit search after typing stops
-        let timeout;
-        document.querySelector('.search-box').addEventListener('input', function() {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                this.form.submit();
+        // Search with debounce
+        let searchTimeout;
+        document.getElementById('searchBox').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const q = this.value;
+            searchTimeout = setTimeout(() => {
+                const url = new URL(window.location);
+                if (q) url.searchParams.set('q', q);
+                else url.searchParams.delete('q');
+                window.location = url;
             }, 500);
         });
 
-        function updateSelection() {
-            const checkboxes = document.querySelectorAll('.transcript-checkbox:checked');
-            const count = checkboxes.length;
-            document.getElementById('selectedCount').textContent = count;
-            document.getElementById('actionBar').classList.toggle('visible', count > 0);
+        function startTranscribe(filename, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Startar...';
 
-            // Update card styling
-            document.querySelectorAll('.transcript-card').forEach(card => {
-                const checkbox = card.querySelector('.transcript-checkbox');
-                card.classList.toggle('selected', checkbox.checked);
+            fetch('/api/transcribe', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filename: filename})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'started' || data.status === 'already_processing') {
+                    btn.textContent = 'Transkriberar...';
+                    pollStatus(filename, btn);
+                } else {
+                    btn.textContent = 'Fel';
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                btn.textContent = 'Fel';
+                btn.disabled = false;
             });
         }
 
-        function clearSelection() {
-            document.querySelectorAll('.transcript-checkbox').forEach(cb => cb.checked = false);
-            updateSelection();
-        }
-
-        function copySelected() {
-            const selected = document.querySelectorAll('.transcript-card.selected');
-            const transcripts = [];
-
-            selected.forEach(card => {
-                const transcript = card.dataset.transcript;
-                const filename = card.querySelector('.transcript-filename').textContent;
-                transcripts.push(`--- ${filename} ---\n${transcript}`);
-            });
-
-            const text = transcripts.join('\n\n');
-            navigator.clipboard.writeText(text).then(() => {
-                showToast(`Copied ${selected.length} transcript${selected.length > 1 ? 's' : ''} to clipboard`);
-            });
+        function pollStatus(filename, btn) {
+            const interval = setInterval(() => {
+                fetch('/api/status/' + encodeURIComponent(filename))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'done') {
+                        clearInterval(interval);
+                        showToast('Transkription klar!');
+                        // Reload to show updated card
+                        setTimeout(() => window.location.reload(), 500);
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        btn.textContent = 'Fel, prova igen';
+                        btn.disabled = false;
+                    }
+                });
+            }, 2000);
         }
 
         function showToast(message) {
@@ -305,9 +311,69 @@
             setTimeout(() => toast.classList.remove('visible'), 2000);
         }
 
-        // Prevent checkbox click from navigating
-        document.querySelectorAll('.transcript-checkbox').forEach(cb => {
-            cb.addEventListener('click', e => e.stopPropagation());
+        function startBatch() {
+            const btn = document.getElementById('batchBtn');
+            const progress = document.getElementById('batchProgress');
+            btn.disabled = true;
+            btn.textContent = 'Startar...';
+
+            fetch('/api/transcribe_batch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({limit: 10})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    btn.textContent = 'Transkriberar...';
+                    pollBatch();
+                } else {
+                    btn.textContent = data.error || 'Fel';
+                    setTimeout(() => { btn.disabled = false; btn.textContent = 'Transkribera 10 till'; }, 2000);
+                }
+            })
+            .catch(() => {
+                btn.textContent = 'Fel';
+                setTimeout(() => { btn.disabled = false; btn.textContent = 'Transkribera 10 till'; }, 2000);
+            });
+        }
+
+        function pollBatch() {
+            const btn = document.getElementById('batchBtn');
+            const progress = document.getElementById('batchProgress');
+            const interval = setInterval(() => {
+                fetch('/api/batch_status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.running) {
+                        btn.textContent = 'Transkriberar ' + data.done + '/' + data.total + '...';
+                        progress.textContent = data.current ? data.current.substring(0, 30) : '';
+                    } else {
+                        clearInterval(interval);
+                        showToast('Batch klar! ' + data.done + ' transkriberade');
+                        setTimeout(() => window.location.reload(), 500);
+                    }
+                });
+            }, 2000);
+        }
+
+        function showMore() {
+            const url = new URL(window.location);
+            const current = parseInt(url.searchParams.get('show') || '{{ show }}');
+            url.searchParams.set('show', current + {{ page_size }});
+            window.location = url;
+        }
+
+        // Check if batch is running on page load
+        fetch('/api/batch_status').then(r => r.json()).then(data => {
+            if (data.running) {
+                const btn = document.getElementById('batchBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Transkriberar ' + data.done + '/' + data.total + '...';
+                    pollBatch();
+                }
+            }
         });
     </script>
 </body>

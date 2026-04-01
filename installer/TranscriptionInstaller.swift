@@ -20,7 +20,7 @@ class InstallerWindow: NSWindow {
     init() {
         let rect = NSRect(x: 0, y: 0, width: 520, height: 340)
         super.init(contentRect: rect, styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        self.title = "Tala — Installation"
+        self.title = "Tala™ — Installation"
         self.center()
         self.isReleasedWhenClosed = false
 
@@ -28,15 +28,22 @@ class InstallerWindow: NSWindow {
         self.contentView = contentView
 
         // Icon/title area
-        let titleLabel = NSTextField(labelWithString: "Tala")
+        // App icon
+        let iconView = NSImageView(frame: NSRect(x: 30, y: 255, width: 50, height: 50))
+        if let iconPath = Bundle.main.path(forResource: "AppIcon", ofType: "icns") {
+            iconView.image = NSImage(contentsOfFile: iconPath)
+        }
+        contentView.addSubview(iconView)
+
+        let titleLabel = NSTextField(labelWithString: "Tala™")
         titleLabel.font = NSFont.boldSystemFont(ofSize: 26)
-        titleLabel.frame = NSRect(x: 30, y: 270, width: 460, height: 30)
+        titleLabel.frame = NSRect(x: 88, y: 270, width: 400, height: 30)
         contentView.addSubview(titleLabel)
 
         let subtitleLabel = NSTextField(labelWithString: "Automatisk transkribering av dina Voice Memos")
         subtitleLabel.font = NSFont.systemFont(ofSize: 13)
         subtitleLabel.textColor = .secondaryLabelColor
-        subtitleLabel.frame = NSRect(x: 30, y: 248, width: 460, height: 20)
+        subtitleLabel.frame = NSRect(x: 88, y: 248, width: 400, height: 20)
         contentView.addSubview(subtitleLabel)
 
         // Status
@@ -89,6 +96,12 @@ class InstallerWindow: NSWindow {
         stepsLabel.frame = NSRect(x: 30, y: 60, width: 460, height: 65)
         stepsLabel.maximumNumberOfLines = 5
         contentView.addSubview(stepsLabel)
+
+        let copyrightLabel = NSTextField(labelWithString: "Powered by AI Empower Labs \u{00A9} 2026")
+        copyrightLabel.font = NSFont.systemFont(ofSize: 10)
+        copyrightLabel.textColor = .quaternaryLabelColor
+        copyrightLabel.frame = NSRect(x: 30, y: 28, width: 240, height: 16)
+        contentView.addSubview(copyrightLabel)
     }
 
     @objc func quitApp() {
@@ -102,10 +115,15 @@ class InstallerWindow: NSWindow {
         progressBar.isIndeterminate = true
         progressBar.startAnimation(nil)
 
-        // Find install.sh relative to the app bundle
-        let appPath = Bundle.main.bundlePath
-        let dmgRoot = (appPath as NSString).deletingLastPathComponent
-        scriptPath = "\(dmgRoot)/Tala/install.sh"
+        // Find install.sh inside app bundle Resources (immune to App Translocation)
+        if let resourcePath = Bundle.main.resourcePath {
+            scriptPath = "\(resourcePath)/Tala/install.sh"
+        } else {
+            // Fallback: relative to app bundle (for DMG without embedding)
+            let appPath = Bundle.main.bundlePath
+            let dmgRoot = (appPath as NSString).deletingLastPathComponent
+            scriptPath = "\(dmgRoot)/Tala/install.sh"
+        }
 
         // Check script exists
         if !FileManager.default.fileExists(atPath: scriptPath) {
@@ -321,7 +339,7 @@ class InstallerWindow: NSWindow {
         progressBar.isIndeterminate = false
         progressBar.doubleValue = 100
         statusLabel.stringValue = "Installationen är klar!"
-        detailLabel.stringValue = "Appen startar automatiskt. Den syns som 🎙️ i menyraden."
+        detailLabel.stringValue = "Appen startar automatiskt. Den syns som en mikrofon-ikon i menyraden."
         installButton.title = "Klar"
         installButton.isEnabled = true
         installButton.target = self

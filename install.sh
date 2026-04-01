@@ -6,8 +6,8 @@
 # ============================================================
 set -e
 
-APP_NAME="Transcription"
-INSTALL_DIR="$HOME/Applications/Transcription"
+APP_NAME="Tala"
+INSTALL_DIR="$HOME/Applications/Tala"
 VENV_DIR="$INSTALL_DIR/venv"
 LAUNCH_AGENT_LABEL="com.transcription.menubar"
 LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/${LAUNCH_AGENT_LABEL}.plist"
@@ -19,17 +19,27 @@ echo ""
 
 # --- 1. Check for Homebrew ---
 if ! command -v brew &>/dev/null; then
-    echo "Homebrew not found. Installing..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # Add Homebrew to PATH for Apple Silicon
-    if [ -f /opt/homebrew/bin/brew ]; then
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-    fi
+    echo ""
+    echo "ERROR: Homebrew krävs men saknas."
+    echo ""
+    echo "Installera Homebrew först genom att öppna Terminal och köra:"
+    echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    echo ""
+    echo "Kör sedan install.sh igen."
+    exit 1
 else
     echo "[OK] Homebrew installed"
 fi
 
-# --- 2. Install system dependencies ---
+# --- 2. Check for python3 ---
+if ! command -v python3 &>/dev/null; then
+    echo "  Installing python3..."
+    brew install python@3
+else
+    echo "[OK] python3"
+fi
+
+# --- 3. Install system dependencies ---
 echo ""
 echo "Installing system dependencies..."
 
@@ -52,7 +62,7 @@ else
     echo "  [OK] whisper-cli"
 fi
 
-# --- 3. Copy app files ---
+# --- 4. Copy app files ---
 echo ""
 echo "Installing app to $INSTALL_DIR..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -70,14 +80,9 @@ else
     if [ -f "$SCRIPT_DIR/icon.icns" ]; then
         cp "$SCRIPT_DIR/icon.icns" "$INSTALL_DIR/"
     fi
-    # Copy launcher scripts
-    if [ -f "$SCRIPT_DIR/start.command" ]; then
-        cp "$SCRIPT_DIR/start.command" "$INSTALL_DIR/"
-        chmod +x "$INSTALL_DIR/start.command"
-    fi
 fi
 
-# --- 4. Create Python virtual environment ---
+# --- 5. Create Python virtual environment ---
 echo ""
 if [ -d "$VENV_DIR" ] && [ -f "$VENV_DIR/bin/python3" ]; then
     echo "[OK] Python virtual environment exists"
@@ -90,7 +95,7 @@ echo "Installing Python dependencies..."
 "$VENV_DIR/bin/pip" install --quiet --upgrade pip
 "$VENV_DIR/bin/pip" install --quiet -r "$INSTALL_DIR/requirements.txt"
 
-# --- 5. Download models (non-interactive) ---
+# --- 6. Download models (non-interactive) ---
 echo ""
 MODEL_DIR="$HOME/Library/Application Support/Transcription/models"
 mkdir -p "$MODEL_DIR"
@@ -102,7 +107,7 @@ if [ -f "$WHISPER_MODEL" ] && [ "$(stat -f%z "$WHISPER_MODEL" 2>/dev/null || ech
     echo "[OK] Whisper model already downloaded"
 else
     echo "Downloading Whisper model (~547 MB)... this may take a few minutes."
-    curl -L --progress-bar -o "$WHISPER_MODEL" \
+    curl -L --fail -C - --progress-bar -o "$WHISPER_MODEL" \
         "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
     echo "  Done."
 fi
@@ -111,12 +116,12 @@ if [ -f "$VAD_MODEL" ] && [ "$(stat -f%z "$VAD_MODEL" 2>/dev/null || echo 0)" -g
     echo "[OK] VAD model already downloaded"
 else
     echo "Downloading VAD model (~885 KB)..."
-    curl -L --progress-bar -o "$VAD_MODEL" \
-        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-silero-vad.bin"
+    curl -L --fail -C - --progress-bar -o "$VAD_MODEL" \
+        "https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin"
     echo "  Done."
 fi
 
-# --- 6. Create start.command (double-clickable launcher) ---
+# --- 7. Create start.command (double-clickable launcher) ---
 cat > "$INSTALL_DIR/start.command" << 'LAUNCHER'
 #!/bin/bash
 # Ensure Homebrew is in PATH (Apple Silicon + Intel)
@@ -126,21 +131,23 @@ elif [ -f /usr/local/bin/brew ]; then
     eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# Ensure log directory exists
-mkdir -p "$HOME/Library/Logs/Transcription"
+LOG_DIR="$HOME/Library/Logs/Transcription"
+mkdir -p "$LOG_DIR"
 
 cd "$(dirname "$0")"
 source venv/bin/activate
 
-# Kill any existing instance to avoid duplicates
-pkill -f "python3 transcription_app.py" 2>/dev/null || true
+# Kill any existing transcription instances (old and new)
+pkill -f "transcription_app.py" 2>/dev/null || true
+pkill -f "transcription-app.*app.py" 2>/dev/null || true
 sleep 1
 
-python3 transcription_app.py >> "$HOME/Library/Logs/Transcription/app.log" 2>&1
+echo "$(date): Starting Tala..." >> "$LOG_DIR/app.log"
+exec python3 -u transcription_app.py >> "$LOG_DIR/app.log" 2>&1
 LAUNCHER
 chmod +x "$INSTALL_DIR/start.command"
 
-# --- 7. Create LaunchAgent for auto-start ---
+# --- 8. Create LaunchAgent for auto-start ---
 echo ""
 echo "Setting up auto-start on login..."
 mkdir -p "$HOME/Library/LaunchAgents"
@@ -177,7 +184,7 @@ PLIST
 mkdir -p "$HOME/Library/Logs/Transcription"
 echo "  LaunchAgent created. App will start on login."
 
-# --- 8. Done ---
+# --- 9. Done ---
 echo ""
 echo "============================================"
 echo "  Installation complete!"

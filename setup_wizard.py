@@ -11,7 +11,7 @@ from pathlib import Path
 from config import MODEL_PATH, MODEL_URL, MODEL_DIR, WHISPER_CMD
 
 VAD_MODEL_PATH = MODEL_DIR / "ggml-silero-vad.bin"
-VAD_MODEL_URL = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-silero-vad.bin"
+VAD_MODEL_URL = "https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin"
 
 
 def check_homebrew():
