@@ -1,7 +1,7 @@
 # Tala™ — Röstmemo till text
 
 ## Version
-- **Nuvarande:** 1.2.7 (2026-03-22)
+- **Nuvarande:** 1.2.8 (2026-04-01)
 - **Producent:** Johan Salo, johan.salo@aiempowerlabs.com
 - **Powered by:** AI Empower Labs © 2026
 
@@ -71,7 +71,7 @@
 ## Bygga DMG
 ```bash
 cd ~/dev/tala && bash build_dmg.sh
-# -> build/Tala-1.2.7.dmg
+# -> build/Tala-1.2.8.dmg
 ```
 Version ändras på 3 ställen i `build_dmg.sh` (VERSION, CFBundleVersion, CFBundleShortVersionString) + i `transcription_app.py` (Om-dialogen).
 
@@ -98,6 +98,7 @@ DMG-innehåll:
 - Kompis i Hamburg: tysk användare (Deutsch tillagt v1.2.3)
 
 ## Ändringslogg
+- **v1.2.8** (2026-04-01): Embedded source files i installer-bundle (undviker App Translocation). Ad-hoc codesigning, "ÖPPNA FÖRST.command" i DMG, launcher pekar på ~/Applications/Tala.
 - **v1.2.7** (2026-03-22): Installationsmapp omdöpt till ~/Applications/Tala. Alla referenser uppdaterade (install.sh, uninstall.sh, build_dmg.sh, LaunchAgent). Input-filer visas i web UI som separat "Inmatade filer"-flik med source-tagging.
 - **v1.2.6** (2026-03-20): Installer-UI: app-ikon, TM-symbol, "Powered by AI Empower Labs © 2026"
 - **v1.2.5** (2026-03-20): "ÖPPNA FÖRST.command" i DMG för att kringgå Gatekeeper
