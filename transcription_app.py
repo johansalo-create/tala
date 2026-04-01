@@ -39,7 +39,7 @@ class TranscriptionApp(rumps.App):
         super().__init__(
             "Tala™",
             icon=icon_path,
-            template=True,
+            template=False,
             quit_button=None
         )
         self.watcher_process = None
@@ -62,39 +62,40 @@ class TranscriptionApp(rumps.App):
         self.language_menu = rumps.MenuItem("Språk")
         self._build_language_menu()
 
-        record_voice_item = rumps.MenuItem("Spela in röstmemo", callback=self.start_voice_memo)
-        transcribe_recent_item = rumps.MenuItem("Transkribera senaste", callback=self.process_recent)
-        webui_item = rumps.MenuItem("Visa transkriptioner", callback=self.open_webui)
-        voice_memos_item = rumps.MenuItem("Röstmemon i Finder", callback=self.open_voice_memos)
-        input_folder_item = rumps.MenuItem("Inmatning i Finder", callback=self.open_input_folder)
-        quit_item = rumps.MenuItem("Avsluta", callback=self.quit_app)
+        self.record_voice_item = rumps.MenuItem("Spela in röstmemo", callback=self.start_voice_memo)
+        self.transcribe_recent_item = rumps.MenuItem("Transkribera senaste", callback=self.process_recent)
+        self.webui_item = rumps.MenuItem("Visa transkriptioner", callback=self.open_webui)
+        self.voice_memos_item = rumps.MenuItem("Röstmemon i Finder", callback=self.open_voice_memos)
+        self.input_folder_item = rumps.MenuItem("Inmatning i Finder", callback=self.open_input_folder)
+        self.about_item = rumps.MenuItem("Om Tala™", callback=self.show_about)
+        self.quit_item = rumps.MenuItem("Avsluta", callback=self.quit_app)
 
         menu_items = [
             self.toggle_item,
             self.status_item,
             None,  # Separator
-            record_voice_item,
+            self.record_voice_item,
             self.record_system_item,
-            transcribe_recent_item,
-            webui_item,
-            voice_memos_item,
-            input_folder_item,
+            self.transcribe_recent_item,
+            self.webui_item,
+            self.voice_memos_item,
+            self.input_folder_item,
             None,  # Separator
             self.language_menu,
             self.recent_menu,
             None,  # Separator
-            rumps.MenuItem("Om Tala™", callback=self.show_about),
-            quit_item,
+            self.about_item,
+            self.quit_item,
         ]
 
         # Tooltips
         tooltips = [
-            (record_voice_item, "Öppnar Apples Voice Memos-app"),
+            (self.record_voice_item, "Öppnar Apples Voice Memos-app"),
             (self.record_system_item, "Spelar in ljud från datorn (kräver BlackHole)"),
-            (transcribe_recent_item, "Transkribera senaste röstmemot manuellt"),
-            (webui_item, f"Öppnar webbgränssnittet (localhost:{FLASK_PORT})"),
-            (voice_memos_item, "Öppnar mappen med synkade iPhone-memon"),
-            (input_folder_item, "Öppnar mappen dit du kan dra egna ljudfiler"),
+            (self.transcribe_recent_item, "Transkribera senaste röstmemot manuellt"),
+            (self.webui_item, f"Öppnar webbgränssnittet (localhost:{FLASK_PORT})"),
+            (self.voice_memos_item, "Öppnar mappen med synkade iPhone-memon"),
+            (self.input_folder_item, "Öppnar mappen dit du kan dra egna ljudfiler"),
         ]
         for item, tip in tooltips:
             item._menuitem.setToolTip_(tip)

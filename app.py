@@ -294,8 +294,10 @@ def serve_audio(transcript_id):
 
 @app.route('/audio/file/<path:filename>')
 def serve_audio_by_filename(filename):
-    """Serve audio file directly from Voice Memos folder."""
+    """Serve audio file directly from Voice Memos or input folder."""
     audio_path = VOICE_MEMOS_DIR / filename
+    if not audio_path.exists():
+        audio_path = INPUT_DIR / filename
     if not audio_path.exists():
         abort(404)
     return send_file(audio_path, mimetype='audio/mp4')
@@ -310,6 +312,8 @@ def api_transcribe():
         return jsonify({'error': 'filename required'}), 400
 
     filepath = VOICE_MEMOS_DIR / filename
+    if not filepath.exists():
+        filepath = INPUT_DIR / filename
     if not filepath.exists():
         return jsonify({'error': 'file not found'}), 404
 
